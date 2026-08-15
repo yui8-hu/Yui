@@ -7,7 +7,7 @@ async function aiCommand(sock, chatId, message) {
         
         if (!text) {
             return await sock.sendMessage(chatId, { 
-                text: "⚠️ يرجى كتابة سؤال بعد الأمر .gpt أو .gemini\n\nمثال: .gpt اكتب لي كود HTML بسيط"
+                text: "╭─────── 🕯️ ───────╮\n  ⚠️ *يرجى كتابة سؤال بعد الأمر:*\n  .ذكاء أو .gpt أو .جيميني\n\n  📌 *مثال:* .ذكاء اكتب لي كود بسيط\n╰─────── ☕︎ ───────╯"
             }, {
                 quoted: message
             });
@@ -20,20 +20,93 @@ async function aiCommand(sock, chatId, message) {
 
         if (!query) {
             return await sock.sendMessage(chatId, { 
-                text: "⚠️ يرجى كتابة السؤال الذي تريد إجابته!"
-            }, {quoted:message});
+                text: "╭─────── ☕︎ ───────╮\n  ⚠️ يرجى كتابة السؤال الذي تريد إجابته!\n╰─────── 𝜗𝜚 ───────╯"
+            }, { quoted: message });
         }
 
         try {
             // Show processing message
             await sock.sendMessage(chatId, {
-                react: { text: '🤖', key: message.key }
+                react: { text: '☕︎', key: message.key }
             });
 
             if (command === '.gpt' || command === '.ذكاء') {
                 // Call the GPT API
                 const response = await axios.get(`https://zellapi.autos/ai/chatbot?text=${encodeURIComponent(query)}`);
                 
+                if (response.data && response.data.status && response.data.result) {
+                    const answer = response.data.result;
+                    const formattedAnswer = `⎯⎯ 𝒀𝒖𝒊 𝒃𝒐𝒕 ☕︎\n\n${answer}\n\n─── ִ ࣪ ˖ ☕︎ ִ ׄ ───`;
+                    
+                    await sock.sendMessage(chatId, {
+                        text: formattedAnswer
+                    }, {
+                        quoted: message
+                    });
+                    
+                } else {
+                    throw new Error('Invalid response from API');
+                }
+            } else if (command === '.gemini' || command === '.جيميني') {
+                const apis = [
+                    `https://vapis.my.id/api/gemini?q=${encodeURIComponent(query)}`,
+                    `https://api.siputzx.my.id/api/ai/gemini-pro?content=${encodeURIComponent(query)}`,
+                    `https://api.ryzendesu.vip/api/ai/gemini?text=${encodeURIComponent(query)}`,
+                    `https://zellapi.autos/ai/chatbot?text=${encodeURIComponent(query)}`,
+                    `https://api.giftedtech.my.id/api/ai/geminiai?apikey=gifted&q=${encodeURIComponent(query)}`,
+                    `https://api.giftedtech.my.id/api/ai/geminiaipro?apikey=gifted&q=${encodeURIComponent(query)}`
+                ];
+
+                for (const api of apis) {
+                    try {
+                        const response = await fetch(api);
+                        const data = await response.json();
+
+                        if (data.message || data.data || data.answer || data.result) {
+                            const answer = data.message || data.data || data.answer || data.result;
+                            const formattedAnswer = `𓆩 🕯️ 𓆪 𝒀𝒖𝒊 𝒃𝒐𝒕\n\n${answer}\n\n─── ִ ࣪ ˖ 🌙 ִ ׄ ───`;
+                            
+                            await sock.sendMessage(chatId, {
+                                text: formattedAnswer
+                            }, {
+                                quoted: message
+                            });
+                            
+                            return;
+                        }
+                    } catch (e) {
+                        continue;
+                    }
+                }
+                throw new Error('All Gemini APIs failed');
+            }
+        } catch (error) {
+            console.error('API Error:', error);
+            await sock.sendMessage(chatId, {
+                text: "╭─────── 🕯️ ───────╮\n  ❌ تعذر الحصول على إجابة، يرجى المحاولة لاحقاً.\n╰─────── ☕︎ ───────╯",
+                contextInfo: {
+                    mentionedJid: [message.key.participant || message.key.remoteJid],
+                    quotedMessage: message.message
+                }
+            }, {
+                quoted: message
+            });
+        }
+    } catch (error) {
+        console.error('AI Command Error:', error);
+        await sock.sendMessage(chatId, {
+            text: "╭─────── ☕︎ ───────╮\n  ❌ حدث خطأ غير متوقع، يرجى المحاولة لاحقاً.\n╰─────── 𝜗𝜚 ───────╯",
+            contextInfo: {
+                mentionedJid: [message.key.participant || message.key.remoteJid],
+                quotedMessage: message.message
+            }
+        }, {
+            quoted: message
+        });
+    }
+}
+
+module.exports = aiCommand;
                 if (response.data && response.data.status && response.data.result) {
                     const answer = response.data.result;
                     await sock.sendMessage(chatId, {
